@@ -1,6 +1,0 @@
-{
-    "export_libraries": [
-        ":Headers"
-    ],
-    "library_name": "libSDL3"
-}
