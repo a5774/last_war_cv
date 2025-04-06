@@ -26,6 +26,7 @@ std::string getAbsPath(std::string filename)
 static const std::string WAV_RP = getAbsPath("sound/DIG.wav");
 static const std::string SHARK_PT_RP = getAbsPath("image/resource.PNG");
 static const std::string SHARK_SP_RP = getAbsPath("image/supplies.PNG");
+static const std::string prepare = getAbsPath("image/prepare.PNG");
 static const std::string FINDED_RP = getAbsPath("find/");
 static const std::string PLAYBACK_CMD = getAbsPath("mplayer") + " -loop 3 -af volume=30 -really-quiet " + WAV_RP;
 static const std::string BINCAPTURE_CMD = "screencap -p ";
@@ -166,9 +167,8 @@ int main(int argc, char *argv[])
     nice(-20);
     std::cout << "Current working directory: " << getAbsPath("") << std::endl;
 
-    cropROI(cv::imread("/sdcard/a1.jpg", cv::IMREAD_COLOR), cv::Rect(736, 732, 384, 192));
+    cropROI(cv::imread("/sdcard/m1.jpg", cv::IMREAD_COLOR), cv::Rect(830, 1200, 139, 140));
     // std::cout << cv::getBuildInformation() << std::endl;
-
     // while (true)
     // {
     //     ret = d_search(shark_pt, 0.9, 1.1, 0.1, threshold);

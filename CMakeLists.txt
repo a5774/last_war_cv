@@ -131,22 +131,19 @@ set_target_properties(dummy PROPERTIES
     BUILD_WITH_INSTALL_RPATH TRUE
     INSTALL_RPATH "$ORIGIN/libs"
 )
-# set_target_properties(dummy PROPERTIES
-#     BUILD_WITH_INSTALL_RPATH TRUE
-#     INSTALL_RPATH "$ORIGIN/libs"
-# )
+
 # add_library(OpenCV SHARED IMPORTED)
 # set_target_properties(OpenGL PROPERTIES IMPORTED_LOCATION ${PROJECT_SOURCE_DIR}/libs/libopencv.so)
 # target_link_libraries(gold PRIVATE OpenGL)
 
-target_include_directories(dummy PRIVATE ${ROOT_PATH}/include/drm)
+# target_include_directories(dummy PRIVATE ${ROOT_PATH}/include/drm)
 target_include_directories(dummy PRIVATE ${ROOT_PATH}/include)
 target_link_directories(dummy PRIVATE ${ROOT_PATH}/libs)
-target_link_libraries(dummy PRIVATE SDL3)
-target_link_libraries(dummy PRIVATE EGL)
-target_link_libraries(dummy PRIVATE GLESv2)
-target_link_libraries(dummy PRIVATE drm)
-# target_link_libraries(gold PRIVATE c++_static)
+# target_link_libraries(dummy PRIVATE SDL3)
+# target_link_libraries(dummy PRIVATE EGL)
+# target_link_libraries(dummy PRIVATE GLESv2)
+# target_link_libraries(dummy PRIVATE drm)
+# target_link_libraries(dummy PRIVATE c++_shared)
 target_link_libraries(dummy ${link_libraries})
 
 
@@ -161,6 +158,8 @@ target_link_libraries(dummy ${link_libraries})
 # target_include_directories(beach PRIVATE ${ROOT_PATH}/include)
 # target_link_directories(beach PRIVATE ${ROOT_PATH}/libs)
 # target_link_libraries(beach PRIVATE SDL3)
+# c++abi support
 # target_link_libraries(beach PRIVATE c++_static)
+# target_link_libraries(beach PRIVATE c++abi)
 # target_link_libraries(beach ${link_libraries})
 

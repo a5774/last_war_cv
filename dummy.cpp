@@ -35,8 +35,9 @@ static const std::string DIG_TIP_RP = getAbsPath("image/small.PNG");
 static const std::string DIG_DRONES_RP = getAbsPath("image/drones.PNG");
 static const std::string DIG_TREASURE_RP = getAbsPath("image/treasure.PNG");
 static const std::string GOLD_TARGET_RP = getAbsPath("image/target.PNG");
+static const std::string DIG_AWARD_RP = getAbsPath("image/award.PNG");
 static const std::string FINDED_RP = getAbsPath("find/");
-static const std::string PLAYBACK_CMD = getAbsPath("mplayer") + " -loop 3 -af volume=30 -really-quiet " + WAV_RP;
+static const std::string PLAYBACK_CMD = getAbsPath("mplayer") + " -loop 2 -af volume=30 -really-quiet " + WAV_RP;
 static const std::string BINCAPTURE_CMD = "screencap -p ";
 static const std::string KEYCODE_BACK_CMD = "input keyevent KEYCODE_BACK";
 static const std::string VOLUME_REDUCE_CMD = "input keyevent 25";
@@ -45,7 +46,7 @@ static const std::string KEYCHECK_BIN = getAbsPath("keycheck");
 static bool logs = false, asmb = false, digs = false, qick = false;
 static int timer = 1000;
 static uint intv = 50, cctm = 50;
-
+static uint retry = 10;
 std::string genRDString(const std::string &prefix = "find_", const std::string &extension = ".PNG")
 {
     std::random_device rd;
@@ -269,7 +270,7 @@ void highFrequencyClick(int fd, cv::Point center, uint width, uint height, uint 
     }
     // getElapsedTime(stime);
 }
-std::string findTouchEventDevice()
+std::string findTouchEventDevice(std::string name)
 {
 
     std::string _prefix = "/dev/input/event";
@@ -293,8 +294,9 @@ std::string findTouchEventDevice()
             }
             char device[256] = {0};
             read(fd, device, sizeof(device) - 1);
+            device[strcspn(device, "\n")] = 0;
             close(fd);
-            if (strstr(device, "NVTCapacitiveTouchScreen"))
+            if (std::string(device) == name)
             {
                 closedir(d_dir);
                 return _prefix + std::string(entry->d_name + 5);
@@ -306,7 +308,7 @@ std::string findTouchEventDevice()
 }
 int initEventDevices()
 {
-    std::string evtx = findTouchEventDevice();
+    std::string evtx = findTouchEventDevice("NVTCapacitiveTouchScreen");
     std::cout << evtx << std::endl;
     int fd_ex = open(evtx.c_str(), O_WRONLY);
     if (fd_ex < 0)
@@ -316,6 +318,36 @@ int initEventDevices()
     }
     return fd_ex;
 }
+std::string piepCommand(const std::string cmd)
+{
+    char buffer[128];
+    std::string result;
+    FILE *pipe = popen(cmd.c_str(), "r");
+    if (!pipe)
+    {
+        return "popen failed!";
+    }
+    while (fgets(buffer, sizeof(buffer), pipe) != nullptr)
+    {
+        result += buffer;
+    }
+    pclose(pipe); // 关闭管道
+    return result;
+}
+void defaultBehavior()
+{
+    // system("monkey -p com.fun.lastwar.gp -c android.intent.category.LAUNCHER 1");
+    system("am start -n com.fun.lastwar.gp/com.im30.aps.debug.UnityPlayerActivityCustom");
+    std::string appid = piepCommand("pidof com.fun.lastwar.gp");
+    std::ostringstream oss;
+    std::cout << "last war progress: " << appid << std::endl;
+    oss << "renice -n -20 " << "-p " << appid;
+    system(oss.str().c_str());
+    oss.str("");
+    oss << "ionice -n 1 -n 0 " << "-p " << appid;
+    system(oss.str().c_str());
+    system("settings put system screen_brightness 1");
+};
 std::function<void(int)> signalHandler;
 void bridgeFunction(int signum)
 {
@@ -324,7 +356,7 @@ void bridgeFunction(int signum)
 int main(int argc, char *argv[])
 {
     int opt;
-    while ((opt = getopt(argc, argv, "qladt:i:c:")) != -1)
+    while ((opt = getopt(argc, argv, "qladbt:i:c:")) != -1)
     {
         switch (opt)
         {
@@ -349,6 +381,9 @@ int main(int argc, char *argv[])
         case 'c':
             cctm = std::stoul(optarg);
             break; // -cctm <value>
+        case 'b':
+            defaultBehavior();
+            break; // -cctm <value>
         default:
             std::cerr << "Unkonw Params" << std::endl;
             break;
@@ -361,7 +396,6 @@ int main(int argc, char *argv[])
     std::cout << "intv: " << intv << std::endl;
     std::cout << "cctm: " << cctm << std::endl;
     std::cout << "qick: " << qick << std::endl;
-
     int fd_ = open("lock/gold.lock", O_RDWR | O_CREAT, 0666);
     if (fd_ == -1)
     {
@@ -385,9 +419,10 @@ int main(int argc, char *argv[])
     cv::Mat m_GT = cv::imread(GOLD_TARGET_RP, cv::IMREAD_COLOR);
     cv::Mat m_GJ = cv::imread(GOLD_JOIN_RP, cv::IMREAD_COLOR);
     cv::Mat m_DP = cv::imread(DIG_TIP_RP, cv::IMREAD_COLOR);
-    cv::Mat m_DT = cv::imread(DIG_DRONES_RP, cv::IMREAD_COLOR);
-    cv::Mat m_DD = cv::imread(DIG_TREASURE_RP, cv::IMREAD_COLOR);
+    cv::Mat m_DD = cv::imread(DIG_DRONES_RP, cv::IMREAD_COLOR);
+    cv::Mat m_DT = cv::imread(DIG_TREASURE_RP, cv::IMREAD_COLOR);
     cv::Mat m_HD = cv::imread(HOME_DETECT_RP, cv::IMREAD_COLOR);
+    cv::Mat m_DA = cv::imread(DIG_AWARD_RP, cv::IMREAD_COLOR);
     // 挖掘机频道裁剪 (0, 525, 1800, 2530 - 2530)
     // 挖掘机图标模板 (1175, 2385, 1415 -1175 , 2620 - 2385)
     // 基地图标模板 (1520, 2630, 1740 -1520 , 2850 - 2630)
@@ -397,15 +432,16 @@ int main(int argc, char *argv[])
     cv::Rect CORP_DP = cv::Rect(1175, 2385, 240, 235);
     cv::Rect CORP_GT = cv::Rect(1570, 1720, 190, 150);
     cv::Rect CORP_HD = cv::Rect(1520, 2630, 220, 220);
+    cv::Rect CORP_DA = cv::Rect(800, 1170, 200, 200);
     std::cout << "power by 牛牛" << std::endl;
     bool hasGT, hasGJ, hasDP;
+    int fd_ex = initEventDevices();
     pid_t pid = fork();
     if (pid == 0)
     {
 
         setsid();
         pid_t ppid = getppid();
-        int fd_ex = initEventDevices();
         // execl("./keycheck", "keycheck", nullptr);
         while (true)
         {
@@ -430,12 +466,16 @@ int main(int argc, char *argv[])
             }
         }
     };
+    // intent Category
     if (pid > 0)
     {
+        // lambda 表达式  为一个对象,使用std::function封装为函数指针
+        // [&] 捕获外部变量
         signalHandler = [&](int signum)
         {
             flock(fd_, LOCK_UN);
             kill(pid, SIGTERM);
+            close(fd_ex);
             exit(signum);
         };
         signal(SIGINT, bridgeFunction);
@@ -493,7 +533,8 @@ int main(int argc, char *argv[])
                 {
                     std::thread threadAsync(runCmdAsync, PLAYBACK_CMD);
                     threadAsync.detach();
-                    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                    system("settings put system screen_brightness 20");
+                    std::this_thread::sleep_for(std::chrono::milliseconds(1500));
                     cv::Mat d_mat = getScreenFrame(cv::IMREAD_COLOR);
                     bool find_T = d_search_single(m_DT, 0.85, CORP_TD_LIMIT, d_mat) || d_search_single(m_DD, 0.85, CORP_TD_LIMIT, d_mat);
                     if (find_T)
@@ -501,11 +542,18 @@ int main(int argc, char *argv[])
                         clickByPoint(PrepDig, 1000);
                         clickByPoint(Digg, 1000);
                         clickByPoint(Dispatch, 1000);
-                        // clickByPoint(TownBase, 700);
-                        // while (condition)ls
-                        // {
-                        //
-                        // }
+                        while (retry)
+                        {
+                            if (d_search_single(m_DA, 0.94, CORP_DA, cv::Mat(), 0, 0, false))
+                            {
+                                highFrequencyClick(fd_ex, PrepDig, 10, 10, cctm, intv);
+                                clickByPoint(TownBase, 500);
+                                clickByPoint(TownBase, 500);
+                                break;
+                            }
+                            retry--;
+                        }
+                        system("settings put system screen_brightness 20");
                     }
                 }
             }
